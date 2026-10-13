@@ -34,7 +34,7 @@ import java.nio.channels.FileChannel;
  * The game reads the Xbox game data (the folder holding maps/) from the
  * app's external files directory, /sdcard/Android/data/com.halo.decomp/files.
  * If it is missing, this screen lets the player pick an Xbox disc image of
- * the game (.xiso or .iso, any version) with the system file picker, and
+ * the game (.xiso or .iso, any version), or a .7z archive of a disc\n * image or maps folder, with the system file picker, and
  * copies its maps folder there (XisoExtractor), as the desktop games do; or
  * they can push the maps folder with adb.
  */
@@ -147,9 +147,9 @@ public class LauncherActivity extends Activity {
         layout.addView(title);
 
         TextView message = new TextView(this);
-        message.setText("Choose an Xbox disc image of Halo: Combat Evolved (an .iso or .xiso file, any "
-            + "version) on this device. Its maps folder is copied into the app's storage (about 1.8 GB), "
-            + "and you can delete the image afterwards.\n\n"
+        message.setText("Choose a Halo: Combat Evolved disc image (.iso or .xiso), or a .7z archive "
+            + "containing a disc image or extracted maps folder. The game data is copied into "
+            + "the app's storage (about 1.8 GB). You can delete the original file afterwards.\\n\\n"
             + "Or choose a folder containing extracted maps (ui.map and the other .map files), "
             + "or a folder with a maps subfolder.\n\n"
             + "You can also copy a maps folder from a computer:\n"
@@ -161,7 +161,7 @@ public class LauncherActivity extends Activity {
         layout.addView(message);
 
         pick = new Button(this);
-        pick.setText("Choose disc image");
+        pick.setText("Choose disc image or .7z");
         pick.setOnClickListener(v -> {
             // (disc images have no MIME type of their own: any file, checked
             // when it is read)
@@ -224,7 +224,7 @@ public class LauncherActivity extends Activity {
             new Thread(() -> importMaps(image), "Halo maps import").start();
         } else {
             progress.setIndeterminate(false);
-            status.setText("Reading the disc image...");
+            status.setText("Reading game data...");
             new Thread(() -> importImage(image), "Halo disc import").start();
         }
     }
@@ -355,28 +355,74 @@ public class LauncherActivity extends Activity {
         }
     }
 
-    private void importImage(Uri image) {
-        try (ParcelFileDescriptor descriptor = getContentResolver().openFileDescriptor(image, "r")) {
-            if (descriptor == null)
-                throw new java.io.IOException("the file could not be opened");
-            try (FileInputStream in = new FileInputStream(descriptor.getFileDescriptor())) {
-                FileChannel channel = in.getChannel();
+    /** Both disc images and 7z archives are accepted by the same picker. */
+    private void extractSelected(FileChannel channel) throws IOException {
+        if (SevenZipImporter.matches(channel)) {
+            report("Reading the 7z archive...", 0);
+            SevenZipImporter.importArchive(channel, dataRoot, (phase, done, total) ->
+                report(phase + " (" + (done >> 20) + " of " + (total >> 20) + " MiB)",
+                    total > 0 ? (int) (done * 1000 / total) : 0));
+        } else {
+            report("Reading the disc image...", 0);
+            XisoExtractor.extractMaps(channel, dataRoot, (file, done, total) ->
+                report("Extracting maps/" + file + " (" + (done >> 20) + " of " + (total >> 20)
+                    + " MiB)", total > 0 ? (int) (done * 1000 / total) : 0));
+        }
+    }
 
-                XisoExtractor.extractMaps(channel, dataRoot, (file, done, total) ->
-                    report("Extracting maps/" + file + " (" + (done >> 20) + " of " + (total >> 20) + " MB)",
-                        total > 0 ? (int) (done * 1000 / total) : 0));
+    private void importImage(Uri image) {
+        File temporary = null;
+        try {
+            if (dataRoot == null) throw new IOException("App storage is unavailable.");
+            boolean seekable;
+            try (ParcelFileDescriptor descriptor = getContentResolver().openFileDescriptor(image, "r")) {
+                if (descriptor == null) throw new IOException("The selected file could not be opened.");
+                try (FileInputStream input = new FileInputStream(descriptor.getFileDescriptor())) {
+                    FileChannel channel = input.getChannel();
+                    // Some Android document providers expose a pipe rather
+                    // than a seekable file. XDVDFS and 7z both need seeking.
+                    try {
+                        channel.position(0);
+                        channel.read(java.nio.ByteBuffer.allocate(1), 0);
+                        seekable = true;
+                    } catch (IOException | UnsupportedOperationException exception) {
+                        seekable = false;
+                    }
+                    if (seekable) extractSelected(channel);
+                }
+            }
+            if (!seekable) {
+                temporary = File.createTempFile("halo-source-", ".tmp", dataRoot);
+                handler.post(() -> progress.setIndeterminate(true));
+                report("Copying the selected file for reading...", -1);
+                long copied = 0;
+                byte[] buffer = new byte[256 * 1024];
+                try (InputStream input = getContentResolver().openInputStream(image);
+                     FileOutputStream output = new FileOutputStream(temporary)) {
+                    if (input == null) throw new IOException("The selected file could not be read.");
+                    int count;
+                    while ((count = input.read(buffer)) != -1) {
+                        copied += count;
+                        if (copied > 16L * 1024 * 1024 * 1024)
+                            throw new IOException("The selected file is too large to import.");
+                        output.write(buffer, 0, count);
+                    }
+                }
+                handler.post(() -> progress.setIndeterminate(false));
+                try (FileInputStream input = new FileInputStream(temporary)) {
+                    extractSelected(input.getChannel());
+                }
             }
             handler.post(() -> {
-                if (haveData()) {
-                    startGame();
-                } else {
-                    fail("The extraction finished but maps/ui.map is missing.");
-                }
+                if (haveData()) startGame();
+                else fail("Import finished but maps/ui.map is missing.");
             });
         } catch (XisoExtractor.ExtractException exception) {
             fail(exception.getMessage());
         } catch (Exception exception) {
-            fail("Extracting failed: " + exception.getMessage());
+            fail("Import failed: " + exception.getMessage());
+        } finally {
+            if (temporary != null) temporary.delete();
         }
     }
 }
