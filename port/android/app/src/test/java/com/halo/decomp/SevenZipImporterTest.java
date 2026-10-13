@@ -9,6 +9,8 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
@@ -18,6 +20,13 @@ public class SevenZipImporterTest {
     @Rule public TemporaryFolder folder = new TemporaryFolder();
 
     private File archive(String[] names, String[] contents) throws IOException {
+        byte[][] payloads = new byte[contents.length][];
+        for (int i = 0; i < contents.length; i++)
+            payloads[i] = contents[i].getBytes(StandardCharsets.UTF_8);
+        return archiveBytes(names, payloads);
+    }
+
+    private File archiveBytes(String[] names, byte[][] contents) throws IOException {
         File archive = folder.newFile("game.7z");
         try (SevenZOutputFile output = new SevenZOutputFile(archive)) {
             for (int i = 0; i < names.length; i++) {
@@ -25,7 +34,7 @@ public class SevenZipImporterTest {
                 entry.setName(names[i]);
                 entry.setDirectory(false);
                 output.putArchiveEntry(entry);
-                output.write(contents[i].getBytes(StandardCharsets.UTF_8));
+                output.write(contents[i]);
                 output.closeArchiveEntry();
             }
         }
@@ -114,6 +123,47 @@ public class SevenZipImporterTest {
         File file = archive(new String[] {"disc/Halo.iso"}, new String[] {"not an Xbox disc"});
         assertRejects(file);
         assertTrue(new File(maps, "old.map").isFile());
+    }
+
+    /** A minimal XDVDFS image with root/maps/ui.map and a 2-byte payload. */
+    private byte[] tinyXboxImage() {
+        ByteBuffer disk = ByteBuffer.allocate(40 * 2048).order(ByteOrder.LITTLE_ENDIAN);
+        byte[] magic = "MICROSOFT*XBOX*MEDIA".getBytes(StandardCharsets.US_ASCII);
+        int volume = 0x10000;
+        disk.position(volume);
+        disk.put(magic);
+        disk.position(volume + 0x7ec);
+        disk.put(magic);
+        disk.putInt(volume + 20, 34); // root directory sector
+        disk.putInt(volume + 24, 64); // root directory bytes
+
+        int root = 34 * 2048;
+        disk.putInt(root + 4, 35); // maps directory sector
+        disk.putInt(root + 8, 64);
+        disk.put(root + 12, (byte) 0x10); // directory attribute
+        disk.put(root + 13, (byte) 4);
+        disk.position(root + 14);
+        disk.put("maps".getBytes(StandardCharsets.US_ASCII));
+
+        int maps = 35 * 2048;
+        disk.putInt(maps + 4, 36); // ui.map file sector
+        disk.putInt(maps + 8, 2);
+        disk.put(maps + 13, (byte) 6);
+        disk.position(maps + 14);
+        disk.put("ui.map".getBytes(StandardCharsets.US_ASCII));
+        disk.position(36 * 2048);
+        disk.put("HI".getBytes(StandardCharsets.US_ASCII));
+        return disk.array();
+    }
+
+    @Test
+    public void importsAnXboxDiscImageInsideSevenZip() throws IOException {
+        existingMaps();
+        File file = archiveBytes(new String[] {"Disc/HALO.XISO"}, new byte[][] {tinyXboxImage()});
+        importFile(file);
+        assertEquals("HI", Files.readString(new File(folder.getRoot(), "maps/ui.map").toPath()));
+        assertFalse(new File(folder.getRoot(), "maps/old.map").exists());
+        assertNoStaging();
     }
 
     @Test
