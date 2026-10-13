@@ -54,6 +54,8 @@ final class SevenZipImporter {
         if (parts.length > 32)
             throw new IOException("The archive contains too many nested folders.");
         for (String part : parts) {
+            // A leading ./ is common when archiving folders at the command line.
+            if (part.equals(".") && path.length() == 0) continue;
             if (part.isEmpty() || part.equals(".") || part.equals("..") || part.length() > 255)
                 throw new IOException("The archive contains an unsafe path.");
             for (int i = 0; i < part.length(); i++) {
@@ -80,6 +82,14 @@ final class SevenZipImporter {
 
     private static boolean isImage(String path) {
         return path.endsWith(".iso") || path.endsWith(".xiso");
+    }
+
+    private static boolean isSelectedMap(String path, String prefix) {
+        if (!path.startsWith(prefix)) return false;
+        String relative = path.substring(prefix.length());
+        // A root-level maps archive can also contain a disc image; never
+        // unpack that image into the installed maps directory.
+        return !relative.isEmpty() && !isImage(relative);
     }
 
     private static void requireSize(long size, long limit) throws IOException {
@@ -186,7 +196,7 @@ final class SevenZipImporter {
                 for (SevenZArchiveEntry entry : archive.getEntries()) {
                     if (entry.isDirectory()) continue;
                     String path = pathOf(entry);
-                    if (mapPrefix != null && path.startsWith(mapPrefix)) {
+                    if (mapPrefix != null && isSelectedMap(path, mapPrefix)) {
                         String relative = path.substring(mapPrefix.length());
                         if (relative.isEmpty() || !names.add(relative))
                             throw new IOException("Duplicate filename in maps: " + relative);
@@ -218,7 +228,7 @@ final class SevenZipImporter {
                 while ((entry = archive.getNextEntry()) != null) {
                     if (entry.isDirectory()) continue;
                     String path = pathOf(entry);
-                    if (mapPrefix != null && path.startsWith(mapPrefix)) {
+                    if (mapPrefix != null && isSelectedMap(path, mapPrefix)) {
                         String relative = path.substring(mapPrefix.length());
                         // safePath already verified all path components.
                         copyEntry(archive, new File(stagedMaps, relative), entry.getSize(),
