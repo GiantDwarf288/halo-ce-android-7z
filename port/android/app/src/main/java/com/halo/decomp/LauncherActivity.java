@@ -149,7 +149,7 @@ public class LauncherActivity extends Activity {
         TextView message = new TextView(this);
         message.setText("Choose a Halo: Combat Evolved disc image (.iso or .xiso), or a .7z archive "
             + "containing a disc image or extracted maps folder. The game data is copied into "
-            + "the app's storage (about 1.8 GB). You can delete the original file afterwards.\\n\\n"
+            + "the app's storage (about 1.8 GB). You can delete the original file afterwards.\n\n"
             + "Or choose a folder containing extracted maps (ui.map and the other .map files), "
             + "or a folder with a maps subfolder.\n\n"
             + "You can also copy a maps folder from a computer:\n"

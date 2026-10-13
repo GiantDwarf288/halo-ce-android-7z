@@ -24,7 +24,10 @@ import java.util.Set;
 final class SevenZipImporter {
     private static final int BUFFER_SIZE = 256 * 1024;
     private static final int MAX_ENTRIES = 4096;
-    private static final int MAX_7Z_MEMORY_KIB = 256 * 1024;
+    // A 256 MiB LZMA2 dictionary needs slightly more than 256 MiB once the
+    // decoder and 7z headers are included. Allow that overhead without
+    // permitting unbounded allocations from untrusted archives.
+    private static final int MAX_7Z_MEMORY_KIB = 384 * 1024;
     private static final long MAX_IMAGE_BYTES = 16L * 1024 * 1024 * 1024;
     private static final long MAX_MAP_BYTES = 8L * 1024 * 1024 * 1024;
 
