@@ -89,6 +89,16 @@ uninstalling, or configure a persistent signing keystore to allow upgrades.
 
 `ninja android` builds only the game image and the native libraries.
 
+## 7z extraction memory
+
+The Android launcher requests a larger Java heap to decompress large LZMA2
+archives (some Halo disc archives use a 256 MiB dictionary). This does not
+change the on-disk game data. Android chooses the actual heap size, which
+varies by device. If the decoder still runs out of memory, the import screen
+reports a readable error rather than ending the app. Recompressing the disc
+with a 64 MiB dictionary on a PC or extracting the `maps/` folder in an
+archive utility before importing avoids the high memory requirement.
+
 ## Game data
 
 The game needs the `maps/` folder from an Xbox disc image (`.xiso` or

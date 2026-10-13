@@ -419,7 +419,17 @@ public class LauncherActivity extends Activity {
             });
         } catch (XisoExtractor.ExtractException exception) {
             fail(exception.getMessage());
+        } catch (OutOfMemoryError error) {
+            // Large 7z archives can have a 256 MiB (or larger) LZMA2
+            // dictionary. Without a sufficiently large Java heap, this
+            // used to terminate the entire launcher process. Keep the
+            // screen available so the player can try a smaller dictionary.
+            android.util.Log.e("halo", "7z import ran out of Java heap", error);
+            fail("The archive needs more memory than Android allows this app to use. "
+                + "Try making a new .7z with a smaller dictionary (64 MiB), "
+                + "or extract the maps folder outside Halo and choose that folder.");
         } catch (Exception exception) {
+            android.util.Log.e("halo", "Game data import failed", exception);
             fail("Import failed: " + exception.getMessage());
         } finally {
             if (temporary != null) temporary.delete();
