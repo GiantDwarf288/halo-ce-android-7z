@@ -80,23 +80,31 @@ of the whole `save` folder stops there.
 
 The game needs the `maps/` folder from an Xbox disc image (`.xiso` or
 `.iso`) of any version of the game. The app extracts `maps/` from the disc
-image. The app keeps the data in `/sdcard/Android/data/com.halo.decomp/files`.
+image. It can also import a `.7z` containing one disc image, or a `.7z`
+containing extracted maps (including a nested `maps/` folder). The app keeps the data in `/sdcard/Android/data/com.halo.decomp/files`.
 
 To install the data with the app:
 
-1. Copy the disc image to the phone.
+1. Copy the disc image or `.7z` archive to the phone.
 2. Start the app.
-3. Push **Choose disc image**. The file picker of the system opens.
-4. Select the disc image.
+3. Push **Choose disc image or .7z**. The file picker of the system opens.
+4. Select the disc image or archive.
 5. Wait while the app extracts the data (approximately 1.8 GB). Then the
    game starts.
-6. You can delete the disc image.
+6. You can delete the original disc image or archive.
 
 Alternatively, choose **Choose extracted maps** and select the folder that
 contains `ui.map` and the other extracted map files, or its parent folder
 with a `maps` subfolder. The system folder picker grants read access; the
 app copies the files into its own storage. An invalid or failed import
 leaves the existing maps in place. The source folder is never modified.
+
+A `.7z` import requires extra free space for the temporary unpacked data (and,
+for a compressed disc, space for the unpacked image as well as the extracted
+maps). The importer does not modify the source archive. Password-protected or
+multi-volume archives are not supported. A bad or interrupted 7z import leaves
+existing game maps untouched. If Android's file provider does not support random
+access, the app makes a temporary copy of the selected archive first.
 
 To install the data from a computer:
 

@@ -41,7 +41,8 @@ an older build from that page.
 ## Game data
 
 The port does not include the game data. Download an Xbox disc image
-(`.xiso` or `.iso`) of Halo: Combat Evolved. All versions of the game
+(`.xiso` or `.iso`) of Halo: Combat Evolved. On Android, the image may also
+be inside a `.7z` archive, or you can use a `.7z` archive of extracted maps. All versions of the game
 operate. The maps of the European (PAL) version were made for a slower
 console. The port changes them to play as the North American (NTSC) maps do,
 so players of the two versions can play together.
@@ -51,7 +52,7 @@ so players of the two versions can play together.
 3. The game extracts the `maps/` folder. Then the game starts.
 
 On Linux and Windows, the game puts `maps/` next to the executable. On
-Android, copy the disc image to the phone first. The app puts `maps/` in its
+Android, copy the disc image or `.7z` archive to the phone first. The app puts `maps/` in its
 data folder. Refer to [port/android/README.md](port/android/README.md). On
 the web, the page copies `maps/` out of the disc image into the browser's
 storage for the site; nothing is uploaded. Refer to
