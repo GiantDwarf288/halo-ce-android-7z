@@ -151,6 +151,7 @@ final class SevenZipImporter {
             long total = 0;
             long imageSize = 0;
             int entryCount = 0;
+            int imageCount = 0;
 
             try (SevenZFile archive = SevenZFile.builder()
                 .setSeekableByteChannel(channel)
@@ -171,14 +172,12 @@ final class SevenZipImporter {
                         mapPrefix = prefix;
                     }
                     if (isImage(path)) {
-                        if (imagePath != null)
-                            imagePath = ""; // ambiguous only if no extracted maps are found
-                        else
-                            imagePath = path;
+                        imageCount++;
+                        imagePath = path;
                     }
                 }
 
-                if (mapPrefix == null && (imagePath == null || imagePath.isEmpty()))
+                if (mapPrefix == null && imageCount != 1)
                     throw new IOException("Choose a .7z with a single .iso/.xiso or a maps folder containing ui.map.");
 
                 // Count only the files we will actually copy, and reject
