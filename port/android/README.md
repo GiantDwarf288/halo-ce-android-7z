@@ -66,6 +66,19 @@ change files that the app wrote, so push before the first start. adb cannot read
 some files that the app writes (the `blam.lst` files of `save/z`), so `adb pull`
 of the whole `save` folder stops there.
 
+## Downloading Android builds
+
+This fork publishes Android builds only. Download
+[halo-android-release.apk](https://github.com/GiantDwarf288/halo-ce-android-7z/releases/latest/download/halo-android-release.apk)
+from the latest successful release on `main`, or find `app-release.apk` in the
+`halo-android-release` artifact on the
+[Actions page](https://github.com/GiantDwarf288/halo-ce-android-7z/actions/workflows/build.yml).
+
+No signing secrets are required: Gradle signs the release build using the
+CI runner's temporary debug key. Without a stable signing key, Android cannot
+install one CI build directly over another. Back up your saves and maps before
+uninstalling, or configure a persistent signing keystore to allow upgrades.
+
 ## Build and install the app
 
 1. Go to the root folder of the repository.

@@ -14,29 +14,22 @@ That project is a fork of [punpckhdq/halo](https://github.com/punpckhdq/halo).
 
 ## Download
 
-GitHub Actions builds the game for each commit. These links download the
-builds of the latest release:
+This fork builds **Android only**. GitHub Actions compiles the release APK and
+runs Android-specific tests; a successful build of `main` publishes it as a
+GitHub release.
 
-| Platform | Release | Debug |
-| --- | --- | --- |
-| Linux | [halo-linux-release.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-linux-release.zip) | [halo-linux-debug.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-linux-debug.zip) |
-| Windows | [halo-windows-release.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-windows-release.zip) | [halo-windows-debug.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-windows-debug.zip) |
-| Android | [halo-android-release.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-android-release.zip) | [halo-android-debug.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-android-debug.zip) |
-| Web | [halocombatevolved.com](https://halocombatevolved.com/) (or [halo-web-release.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-web-release.zip) for your own server) | [halo-web-debug.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-web-debug.zip) |
+**[Download the latest Android APK](https://github.com/GiantDwarf288/halo-ce-android-7z/releases/latest/download/halo-android-release.apk)**
 
-Use the release build to play. The debug build stops at the first failed
-assertion and writes it to the log. Use the debug build to find and report
-problems.
+The [Android build workflow](https://github.com/GiantDwarf288/halo-ce-android-7z/actions/workflows/build.yml)
+also offers an artifact named `halo-android-release`. This includes
+`app-release.apk` and the relevant licenses.
 
-The game updates itself. At start-up it looks for a newer release, and asks
-if you want to install it. Refer to "Updates" in
-[port/linux/README.md](port/linux/README.md#updates). The web site offers
-each new build when it is out.
-
-Each build of the `main` branch that passes on all four platforms is a new
-release, and the web site then plays it. The [Releases](https://github.com/OpenCommunityEdition/OpenCE/releases)
-page keeps the last five releases. If the latest build has a problem, get
-an older build from that page.
+A custom Android signing keystore is not required to build or install the APK:
+without signing secrets, Gradle uses the runner's debug key to sign its
+non-debuggable release APK. The key is not stable across CI runs, however. To
+install a later build over an earlier one without uninstalling and losing
+app data, configure a persistent signing key. Until then, back up game data and
+saved games before uninstalling an older version.
 
 ## Game data
 

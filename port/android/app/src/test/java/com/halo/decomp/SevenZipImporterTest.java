@@ -41,6 +41,10 @@ public class SevenZipImporterTest {
         return archive;
     }
 
+    private static String readUtf8(File file) throws IOException {
+        return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+    }
+
     private File existingMaps() throws IOException {
         File maps = new File(folder.getRoot(), "maps");
         assertTrue(maps.mkdir());
@@ -80,9 +84,9 @@ public class SevenZipImporterTest {
             new String[] {"Halo CE/MAPS/UI.MAP", "Halo CE/MAPS/BeaverCreek.MAP"},
             new String[] {"ui-content", "level-content"});
         importFile(file);
-        assertEquals("ui-content", Files.readString(new File(folder.getRoot(), "maps/ui.map").toPath()));
+        assertEquals("ui-content", readUtf8(new File(folder.getRoot(), "maps/ui.map")));
         assertEquals("level-content",
-            Files.readString(new File(folder.getRoot(), "maps/beavercreek.map").toPath()));
+            readUtf8(new File(folder.getRoot(), "maps/beavercreek.map")));
         assertFalse(new File(folder.getRoot(), "maps/old.map").exists());
         assertNoStaging();
     }
@@ -161,7 +165,7 @@ public class SevenZipImporterTest {
         existingMaps();
         File file = archiveBytes(new String[] {"Disc/HALO.XISO"}, new byte[][] {tinyXboxImage()});
         importFile(file);
-        assertEquals("HI", Files.readString(new File(folder.getRoot(), "maps/ui.map").toPath()));
+        assertEquals("HI", readUtf8(new File(folder.getRoot(), "maps/ui.map")));
         assertFalse(new File(folder.getRoot(), "maps/old.map").exists());
         assertNoStaging();
     }
